@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Adaptation Platform Library</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+  <!-- =================== Top bar =================== -->
+  <header class="topbar">
+    <div class="topbar-row">
+      <div class="brand">
+        <span class="mark" aria-hidden="true"></span>
+        <h1>Adaptation Platform Library</h1>
+        <span class="tag">v1.0</span>
+      </div>
+
+      <div class="search">
+        <input id="search" type="text" placeholder="Search name or description…" />
+      </div>
+
+      <input id="file" type="file" accept=".xlsx,.xls" style="display:none" />
+      <button id="load-btn" class="btn primary" type="button">Load .xlsx</button>
+      <button id="reset-btn" class="btn ghost" type="button" title="Restore demo dataset">Use demo data</button>
+
+      <label id="gaps-toggle-wrap" class="toggle" title="Show only records with at least one missing field">
+        <input id="gaps-toggle" type="checkbox" />
+        Only records with gaps
+      </label>
+
+      <span id="meta" class="meta"></span>
+    </div>
+  </header>
+
+  <!-- =================== Filter bar =================== -->
+  <div class="filterbar-wrap">
+    <div class="filterbar" id="filterbar"></div>
+    <div class="filterbar-foot">
+      <div class="sort-wrap">
+        <label class="filter-label" for="sort-select">Sort by</label>
+        <select id="sort-select" class="select-input">
+          <option value="gaps_desc">Most gaps first</option>
+          <option value="gaps_asc">Most complete first</option>
+          <option value="id">Product ID</option>
+          <option value="name">Product name (A–Z)</option>
+          <option value="owner">Owner (A–Z)</option>
+        </select>
+      </div>
+      <button id="clear-filters" class="btn ghost" type="button">Clear all filters</button>
+    </div>
+  </div>
+
+  <!-- =================== Cards =================== -->
+  <main class="view-wrap">
+    <section id="view-cards" data-screen-label="Card library"></section>
+  </main>
+
+  <!-- =================== Detail drawer =================== -->
+  <div id="drawer-overlay" class="drawer-overlay hidden">
+    <aside id="drawer" class="drawer" aria-hidden="true"></aside>
+  </div>
+
+  <div class="note">
+    Internal use · static HTML · xlsx parsed locally in your browser (file never leaves your machine).
+  </div>
+
+  <script src="demo-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
