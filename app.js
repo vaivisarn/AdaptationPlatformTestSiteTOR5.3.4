@@ -35,15 +35,25 @@
 
   // ===== State =======================================================
 
+  // source: "bundled" (data/platforms.xlsx) | "demo" | "uploaded"
   const state = {
     rows: [],
-    sourceLabel: "demo data",
+    source: "bundled",
+    sourceLabel: "loading…",
+    bundledRows: null,         // cached after first fetch
+    bundledLabel: null,
+    bundledError: null,
+    uploadedRows: null,        // last user-picked file
+    uploadedLabel: null,
     filters: {},
     search: "",
     onlyGaps: false,
     sort: "gaps_desc",
     openId: null,
   };
+
+  // Path to the bundled spreadsheet — committed alongside index.html.
+  const BUNDLED_XLSX_PATH = "data/platforms.xlsx";
 
   // ===== Helpers =====================================================
 
@@ -202,27 +212,73 @@
     return rows;
   };
 
-  const loadXlsx = (file) => {
+  // Parse an ArrayBuffer/Uint8Array into { rows, sheetName }.
+  const parseXlsxBuffer = (buf) => {
+    const data = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+    const wb = XLSX.read(data, { type: "array" });
+    const { name, sheet } = pickSheet(wb);
+    if (!sheet) throw new Error("No usable sheet found");
+    const rows = parseProductsSheet(sheet);
+    if (!rows.length) throw new Error(`Sheet "${name}" has no data rows`);
+    return { rows, sheetName: name };
+  };
+
+  // File-picker upload (overrides the bundled file for this session).
+  const loadUploadedFile = (file) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const data = new Uint8Array(e.target.result);
-        const wb = XLSX.read(data, { type: "array" });
-        const { name, sheet } = pickSheet(wb);
-        if (!sheet) throw new Error("No usable sheet found");
-        const rows = parseProductsSheet(sheet);
-        if (!rows.length) throw new Error(`Sheet "${name}" has no data rows`);
-        state.rows = rows;
-        state.sourceLabel = `${file.name} · sheet "${name}" · ${rows.length} rows`;
-        state.filters = {};
-        state.openId = null;
-        renderAll();
+        const { rows, sheetName } = parseXlsxBuffer(e.target.result);
+        state.uploadedRows  = rows;
+        state.uploadedLabel = `${file.name} · sheet "${sheetName}" · ${rows.length} rows`;
+        setSource("uploaded");
       } catch (err) {
         console.error(err);
         alert("Could not read file: " + err.message);
       }
     };
     reader.readAsArrayBuffer(file);
+  };
+
+  // Auto-load the spreadsheet that ships with the page.
+  const loadBundled = async () => {
+    try {
+      const resp = await fetch(BUNDLED_XLSX_PATH, { cache: "no-cache" });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const buf = await resp.arrayBuffer();
+      const { rows, sheetName } = parseXlsxBuffer(buf);
+      state.bundledRows  = rows;
+      state.bundledLabel = `${BUNDLED_XLSX_PATH} · sheet "${sheetName}" · ${rows.length} rows`;
+      state.bundledError = null;
+    } catch (err) {
+      console.warn("Bundled spreadsheet failed to load:", err);
+      state.bundledError = err.message || String(err);
+    }
+  };
+
+  // Switch the active data source and re-render.
+  const setSource = (which) => {
+    state.source = which;
+    state.filters = {};
+    state.openId  = null;
+    if (which === "bundled") {
+      if (state.bundledRows) {
+        state.rows = state.bundledRows;
+        state.sourceLabel = state.bundledLabel;
+      } else {
+        state.rows = [];
+        state.sourceLabel = state.bundledError
+          ? `couldn't load ${BUNDLED_XLSX_PATH} (${state.bundledError})`
+          : "loading…";
+      }
+    } else if (which === "demo") {
+      state.rows = window.DEMO_ROWS;
+      state.sourceLabel = `demo data · ${window.DEMO_ROWS.length} rows`;
+    } else if (which === "uploaded") {
+      state.rows = state.uploadedRows || [];
+      state.sourceLabel = state.uploadedLabel || "no file uploaded yet";
+    }
+    renderAll();
   };
 
   // ===== Top meta ====================================================
@@ -456,27 +512,69 @@
     renderTopMeta();
     renderFilters();
     renderCards();
+    renderSourceToggle();
     if (state.openId) renderDrawer();
   };
 
   // ===== Init ========================================================
 
-  window.addEventListener("DOMContentLoaded", () => {
-    state.rows = window.DEMO_ROWS;
+  const renderSourceToggle = () => {
+    $$("#source-toggle .seg-btn").forEach(btn => {
+      const v = btn.dataset.source;
+      const enabled = v !== "uploaded" || !!state.uploadedRows;
+      btn.classList.toggle("active", state.source === v);
+      btn.disabled = !enabled && state.source !== v;
+      if (v === "uploaded") {
+        btn.textContent = state.uploadedLabel
+          ? "Uploaded file"
+          : "Uploaded — none yet";
+      }
+    });
+    // Show bundled error inline if present and active source is bundled
+    const warn = $("#bundled-warn");
+    if (state.source === "bundled" && state.bundledError) {
+      warn.classList.remove("hidden");
+      warn.textContent = `Couldn’t load ${BUNDLED_XLSX_PATH}. Serve over http:// (e.g. python3 -m http.server) or pick a file manually.`;
+    } else {
+      warn.classList.add("hidden");
+    }
+  };
 
+  window.addEventListener("DOMContentLoaded", async () => {
+    // Start with demo data while the bundled file streams in,
+    // so the page never sits blank.
+    state.source = "bundled";
+    state.sourceLabel = "loading…";
+    state.rows = [];
+    renderAll();
+
+    await loadBundled();
+    if (state.bundledRows) {
+      setSource("bundled");
+    } else {
+      // Fall back to demo if bundled fetch failed (e.g. opened via file://)
+      setSource("demo");
+    }
+
+    // Source toggle
+    $$("#source-toggle .seg-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const v = btn.dataset.source;
+        if (v === "uploaded" && !state.uploadedRows) {
+          $("#file").click();
+          return;
+        }
+        setSource(v);
+      });
+    });
+
+    // File picker (always available)
     $("#file").addEventListener("change", (e) => {
       const f = e.target.files[0];
-      if (f) loadXlsx(f);
+      if (f) loadUploadedFile(f);
+      e.target.value = "";
     });
-    $("#load-btn").addEventListener("click", () => $("#file").click());
-    $("#reset-btn").addEventListener("click", () => {
-      state.rows = window.DEMO_ROWS;
-      state.sourceLabel = "demo data";
-      state.filters = {};
-      state.openId = null;
-      $("#file").value = "";
-      renderAll();
-    });
+    $("#upload-btn").addEventListener("click", () => $("#file").click());
 
     $("#search").addEventListener("input", (e) => {
       state.search = e.target.value;

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Adaptation Platform Library — Wireframe</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>.hidden { display: none !important; }</style>
+</head>
+<body>
+
+  <!-- =================== Top bar =================== -->
+  <header class="topbar">
+    <div class="topbar-row">
+      <div class="brand">
+        <span class="mark" aria-hidden="true"></span>
+        <h1>Adaptation Platform Library</h1>
+        <span class="tag">Wireframe · v0.1</span>
+      </div>
+
+      <div class="search">
+        <input id="search" type="text" placeholder="Search name or description…" />
+      </div>
+
+      <input id="file" type="file" accept=".xlsx,.xls" style="display:none" />
+      <button id="load-btn" class="btn primary" type="button">Load .xlsx</button>
+      <button id="reset-btn" class="btn ghost" type="button" title="Restore demo dataset">Use demo data</button>
+
+      <label id="gaps-toggle-wrap" class="toggle" title="Show only records with at least one missing field">
+        <input id="gaps-toggle" type="checkbox" />
+        Only records with gaps
+      </label>
+
+      <span id="meta" class="meta"></span>
+    </div>
+  </header>
+
+  <!-- =================== Wireframe note =================== -->
+  <div class="banner">
+    <span class="dot"></span>
+    Low-fi wireframe · 4 layout options as tabs · drop in the latest xlsx via “Load .xlsx”. Empty cells render as
+    <span class="missing" style="margin: 0 4px"></span> markers.
+  </div>
+
+  <!-- =================== Tabs =================== -->
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-view="cards"><span class="num">01</span> Card library</button>
+    <button class="tab"        data-view="table"><span class="num">02</span> Dense table</button>
+    <button class="tab"        data-view="split"><span class="num">03</span> Split view</button>
+    <button class="tab"        data-view="board"><span class="num">04</span> Grouped board</button>
+  </nav>
+
+  <!-- =================== Filter bar =================== -->
+  <div class="filterbar" id="filterbar"></div>
+
+  <!-- =================== Views =================== -->
+  <main class="view-wrap">
+    <section class="view"          data-view="cards" id="view-cards" data-screen-label="01 Card library"></section>
+    <section class="view hidden"   data-view="table" id="view-table" data-screen-label="02 Dense table"></section>
+    <section class="view hidden"   data-view="split" id="view-split" data-screen-label="03 Split view"></section>
+    <section class="view hidden"   data-view="board" id="view-board" data-screen-label="04 Grouped board"></section>
+  </main>
+
+  <div class="note">
+    Internal use · static HTML · xlsx parsed locally in your browser (file never leaves your machine).
+  </div>
+
+  <script src="demo-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

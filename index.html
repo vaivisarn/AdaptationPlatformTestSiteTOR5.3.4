@@ -23,9 +23,13 @@
         <input id="search" type="text" placeholder="Search name or description…" />
       </div>
 
+      <div id="source-toggle" class="seg" role="group" aria-label="Data source">
+        <button class="seg-btn" data-source="bundled" type="button" title="Spreadsheet bundled with this page">Live inventory</button>
+        <button class="seg-btn" data-source="demo"    type="button" title="Built-in 12-row demo set">Demo data</button>
+        <button class="seg-btn" data-source="uploaded" type="button" title="Pick a different .xlsx from your computer">Uploaded — none yet</button>
+      </div>
       <input id="file" type="file" accept=".xlsx,.xls" style="display:none" />
-      <button id="load-btn" class="btn primary" type="button">Load .xlsx</button>
-      <button id="reset-btn" class="btn ghost" type="button" title="Restore demo dataset">Use demo data</button>
+      <button id="upload-btn" class="btn ghost" type="button" title="Upload a different .xlsx for ad-hoc review">Upload…</button>
 
       <label id="gaps-toggle-wrap" class="toggle" title="Show only records with at least one missing field">
         <input id="gaps-toggle" type="checkbox" />
@@ -34,6 +38,7 @@
 
       <span id="meta" class="meta"></span>
     </div>
+    <div id="bundled-warn" class="bundled-warn hidden"></div>
   </header>
 
   <!-- =================== Filter bar =================== -->
